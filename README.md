@@ -1,4 +1,6 @@
 
+[![CI](https://github.com/TIBHannover/ckanext-tif-imageview/actions/workflows/test.yml/badge.svg)](https://github.com/TIBHannover/ckanext-tif-imageview/actions/workflows/test.yml)
+
 # ckanext-tif-imageview
 
 The CKAN extension for TIFF images preview. 

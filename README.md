@@ -15,6 +15,8 @@ Compatibility with core CKAN versions:
 | CKAN version    | Compatible?   |
 | --------------- | ------------- |
 |  2.9 | Yes    |
+|  2.10 | Yes   |
+|  2.11 | Yes   |
 | earlier | NoT Tested |           |
 
 
@@ -51,6 +53,5 @@ Modify ckan.ini (/etc/ckan/default/)
 
 	# add the plugin to:
     ckan.views.default_views
-
 
 

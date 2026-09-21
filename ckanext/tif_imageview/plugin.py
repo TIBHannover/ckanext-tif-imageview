@@ -1,28 +1,36 @@
-from os import read
+import base64
+import io
+from urllib.parse import urlsplit
+
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from six import text_type
 from flask import Blueprint, request
-import ckan.lib.helpers as h
 from PIL import Image
-import io
 import ckan.lib.uploader as uploader
-import base64
 
 ignore_empty = plugins.toolkit.get_validator('ignore_empty')
 
 
-def convert(): 
-    
-    resource_id = request.form.get('resource_id')    
-    rsc = toolkit.get_action('resource_show')({}, {'id': resource_id})
+def convert():
+    resource_id = request.form.get('resource_id')
+    if not resource_id:
+        toolkit.abort(400, 'Missing resource_id')
+
+    context = {'user': getattr(toolkit.g, 'user', None)}
+    rsc = toolkit.get_action('resource_show')(context, {'id': resource_id})
+    if rsc.get('url_type') != 'upload':
+        toolkit.abort(400, 'Only uploaded TIFF resources can be converted')
+
     upload = uploader.get_resource_uploader(rsc)
     filepath = upload.get_path(rsc['id'])
-    file = open(filepath, "rb").read()
-    img = Image.open(io.BytesIO(file))    
+    with open(filepath, 'rb') as source:
+        image_data = source.read()
+
+    img = Image.open(io.BytesIO(image_data))
     output = io.BytesIO()
-    img.convert('RGB').save(output, 'JPEG')    
-    output.seek(0)        
+    img.convert('RGB').save(output, 'JPEG')
+    output.seek(0)
     return base64.b64encode(output.getvalue()).decode()
 
 
@@ -38,10 +46,6 @@ class TifImageviewPlugin(plugins.SingletonPlugin):
     def update_config(self, config_):
         toolkit.add_template_directory(config_, 'theme/templates')
         toolkit.add_public_directory(config_, 'public')
-        toolkit.add_resource('fanstatic', 'tif_imageview')
-        self.formats = config_.get(
-            'ckan.preview.image_formats',
-            'tiff tif TIFF').split()
         
         
     def info(self):
@@ -56,8 +60,14 @@ class TifImageviewPlugin(plugins.SingletonPlugin):
     
     def can_view(self, data_dict):
         resource = data_dict['resource']
-        return (resource.get('format', '').lower() in ['tif', 'tiff' ] or
-                resource['url'].split('.')[-1] in ['tif'])
+        if resource.get('url_type') != 'upload':
+            return False
+
+        image_format = resource.get('format', '').lower()
+        path = urlsplit(resource.get('url', '')).path.lower()
+        return image_format in {'tif', 'tiff'} or path.endswith(
+            ('.tif', '.tiff')
+        )
 
     def view_template(self, context, data_dict):
         return 'tif_view.html'

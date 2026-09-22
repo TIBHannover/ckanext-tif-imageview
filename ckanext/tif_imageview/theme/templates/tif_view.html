@@ -1,7 +1,8 @@
-{% set dest_url = h.url_for('tif_imageview.convert', image_id=resource.id, _external=True) %}
+{% set dest_url = h.url_for('tif_imageview.convert', _external=True) %}
 <img id=imageid src=""> 
 <input type="hidden" id="ajax_url" value="{{dest_url}}">
 <input type="hidden" id="resource_id" value="{{resource.id}}">
+<span id="tif-csrf-token" hidden>{{ h.csrf_input() }}</span>
 
   
 <script type="text/javascript">
@@ -9,6 +10,10 @@
   let ajax_url = document.getElementById("ajax_url").value;
   let formdata = new FormData();
   formdata.set('resource_id', document.getElementById("resource_id").value);
+  let csrfInput = document.querySelector('#tif-csrf-token input');
+  if (csrfInput) {
+      formdata.set(csrfInput.name, csrfInput.value);
+  }
 
   request.onreadystatechange = function() {
       if (request.readyState == XMLHttpRequest.DONE && request.status == 200 ){            
